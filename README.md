@@ -1,6 +1,6 @@
-# Market Voice — Steps 1 & 2: Video Finder + Transcript Collector
+# Market Voice — Steps 1, 2 & 3: Video Finder + Transcript Collector + Transcript Cleaner
 
-This project now covers the first two steps of the Market Voice workflow. Run one command and it automatically finds relevant YouTube videos **and** downloads their transcripts.
+This project now covers the first three steps of the Market Voice workflow. Run one command and it automatically finds relevant YouTube videos, downloads their transcripts, and cleans and chunks them ready for AI analysis.
 
 Step 1 has two sub-steps that run automatically back to back:
 
@@ -11,6 +11,10 @@ Then Step 2 runs automatically:
 
 - **Step 2 — Transcript Collector:** Downloads the transcript (captions) for each video and saves one `.txt` file per video into a `/transcripts` folder
 
+Then Step 3 runs automatically:
+
+- **Step 3 — Transcript Cleaner:** Cleans up the raw transcript text and splits each transcript into word-count chunks ready for AI analysis. Saves results into `/cleaned_transcripts`.
+
 ---
 
 ## What Files Were Created
@@ -20,6 +24,7 @@ Then Step 2 runs automatically:
 | `video_finder.py` | The main script. You run this. It handles Step 1A, Step 1B, and then calls Step 2. |
 | `phrase_expander.py` | Step 1A logic. Generates search phrases. Called by `video_finder.py` — you don't run this directly. |
 | `transcript_collector.py` | Step 2 logic. Downloads transcripts. Called automatically — or run it on its own. |
+| `transcript_cleaner.py` | Step 3 logic. Cleans and chunks transcripts. Called automatically — or run it on its own. |
 | `requirements.txt` | A list of Python packages this project needs. You install these once. |
 | `.env.example` | A template showing where to put your API keys. You copy this and rename it to `.env`. |
 | `.gitignore` | Tells git which files to ignore (like your private `.env` file). |
@@ -28,6 +33,7 @@ Then Step 2 runs automatically:
 When you run the script, it creates:
 - an `output/` folder with your video list (`.json` and `.txt`)
 - a `transcripts/` folder with one `.txt` file per video that has captions
+- a `cleaned_transcripts/` folder with one cleaned `.txt` and one `_chunks.json` per video
 
 ---
 
@@ -269,17 +275,74 @@ For phrase generation, the default (`claude-haiku-4-5`) is more than good enough
 
 ---
 
+## Step 3: Transcript Cleaner
+
+Step 3 runs **automatically** right after Step 2 finishes. You don't need to do anything extra.
+
+### What it does
+
+1. Reads every `.txt` file from the `transcripts/` folder
+2. Separates the metadata header (Title, Channel, URL, Date) from the transcript body
+3. Cleans the body text — collapses extra spaces, removes repeated blank lines, strips control characters — **without removing any words or content**
+4. Splits the cleaned body into chunks of ~1,400 words each
+5. Saves two files per video into the `cleaned_transcripts/` folder:
+   - `video_name.txt` — the cleaned full transcript (still human-readable)
+   - `video_name_chunks.json` — the same text split into numbered chunks
+
+### Why chunking?
+
+Transcripts can be very long. When a future step sends a transcript to an AI for analysis, it works best when the AI reads one focused section at a time rather than the entire text. Chunks of ~1,400 words are a practical size that fits comfortably within AI context limits.
+
+### What a chunks JSON file looks like
+
+```json
+[
+  {
+    "video_title": "HubSpot CRM Full Tutorial 2024",
+    "chunk_id": 1,
+    "text": "Hello and welcome to this tutorial on HubSpot CRM..."
+  },
+  {
+    "video_title": "HubSpot CRM Full Tutorial 2024",
+    "chunk_id": 2,
+    "text": "Now let's look at the contacts view..."
+  }
+]
+```
+
+### End-of-run summary
+
+After processing all transcripts, you'll see something like:
+
+```
+  STEP 3 COMPLETE — SUMMARY
+  --------------------------------------------------------
+  Transcripts processed:      12
+  Errors:                     0
+  Output saved to:            C:\Users\You\market-voice\cleaned_transcripts
+```
+
+### Running Step 3 on its own
+
+If you already have transcripts in `/transcripts` and just want to re-run the cleaning step:
+
+```
+python transcript_cleaner.py
+```
+
+---
+
 ## What Comes Next (Future Steps)
 
 | Step | What It Does |
 |------|-------------|
-| **Step 1 (this)** | Find relevant YouTube videos |
-| **Step 2 (this)** | Collect transcripts from those videos |
-| Step 3 | Summarize what people are saying |
+| **Step 1 (done)** | Find relevant YouTube videos |
+| **Step 2 (done)** | Collect transcripts from those videos |
+| **Step 3 (done)** | Clean and chunk transcripts for AI analysis |
 | Step 4 | Extract key insights by audience and topic |
 | Step 5 | Generate a Market Voice report |
 
-The transcript `.txt` files saved to `/transcripts` will be the input for Step 3.
+The chunked `.json` files saved to `/cleaned_transcripts` will be the input for Step 4.
 
 ---
 

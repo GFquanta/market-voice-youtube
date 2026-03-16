@@ -37,6 +37,9 @@ from phrase_expander import expand_search_phrases
 # Import Step 2 transcript collector
 from transcript_collector import collect_transcripts
 
+# Import Step 3 transcript cleaner
+from transcript_cleaner import clean_transcripts
+
 # -------------------------------------------------------
 # LOAD SECRET API KEYS
 # -------------------------------------------------------
@@ -351,6 +354,9 @@ if __name__ == "__main__":
 
         # --- Run Step 2: collect transcripts for all found videos ---
         collect_transcripts(json_path=json_file)
+
+        # --- Run Step 3: clean and chunk all transcripts ---
+        clean_transcripts()
 
     else:
         print("\n  No results to save. Try adjusting your inputs.\n")
