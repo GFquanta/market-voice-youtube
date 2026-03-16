@@ -1,0 +1,9 @@
+# Never commit your real API key to git
+.env
+
+# Python cache files (auto-generated, not needed)
+__pycache__/
+*.pyc
+
+# Output files (generated when you run the script)
+output/
