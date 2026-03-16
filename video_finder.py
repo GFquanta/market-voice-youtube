@@ -34,6 +34,9 @@ from googleapiclient.discovery import build
 # Import our Step 1A phrase expander
 from phrase_expander import expand_search_phrases
 
+# Import Step 2 transcript collector
+from transcript_collector import collect_transcripts
+
 # -------------------------------------------------------
 # LOAD SECRET API KEYS
 # -------------------------------------------------------
@@ -345,5 +348,9 @@ if __name__ == "__main__":
         print(f"    Readable text:  {txt_file}")
         print(f"    Machine JSON:   {json_file}")
         print("  " + "=" * 56 + "\n")
+
+        # --- Run Step 2: collect transcripts for all found videos ---
+        collect_transcripts(json_path=json_file)
+
     else:
         print("\n  No results to save. Try adjusting your inputs.\n")

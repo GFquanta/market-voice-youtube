@@ -1,13 +1,15 @@
-# Market Voice — Step 1: Video Finder
+# Market Voice — Steps 1 & 2: Video Finder + Transcript Collector
 
-This is **Step 1** of the Market Voice project. Its only job is to find relevant YouTube videos about a company and topic, and give you a clean ranked list to review.
+This project now covers the first two steps of the Market Voice workflow. Run one command and it automatically finds relevant YouTube videos **and** downloads their transcripts.
 
-Step 1 now has two sub-steps that run automatically back to back:
+Step 1 has two sub-steps that run automatically back to back:
 
 - **Step 1A — Search Phrase Expander:** Generates 6 smart YouTube search phrases from your inputs
 - **Step 1B — Video Finder:** Searches YouTube once per phrase, removes duplicates, and ranks results
 
-No transcripts. No summaries. Just a list of videos. That comes in later steps.
+Then Step 2 runs automatically:
+
+- **Step 2 — Transcript Collector:** Downloads the transcript (captions) for each video and saves one `.txt` file per video into a `/transcripts` folder
 
 ---
 
@@ -15,14 +17,17 @@ No transcripts. No summaries. Just a list of videos. That comes in later steps.
 
 | File | What It Does |
 |------|-------------|
-| `video_finder.py` | The main script. You run this. It handles both Step 1A and Step 1B automatically. |
+| `video_finder.py` | The main script. You run this. It handles Step 1A, Step 1B, and then calls Step 2. |
 | `phrase_expander.py` | Step 1A logic. Generates search phrases. Called by `video_finder.py` — you don't run this directly. |
+| `transcript_collector.py` | Step 2 logic. Downloads transcripts. Called automatically — or run it on its own. |
 | `requirements.txt` | A list of Python packages this project needs. You install these once. |
 | `.env.example` | A template showing where to put your API keys. You copy this and rename it to `.env`. |
 | `.gitignore` | Tells git which files to ignore (like your private `.env` file). |
 | `README.md` | This file. |
 
-When you run the script, it creates an `output/` folder and saves your results there.
+When you run the script, it creates:
+- an `output/` folder with your video list (`.json` and `.txt`)
+- a `transcripts/` folder with one `.txt` file per video that has captions
 
 ---
 
@@ -181,6 +186,65 @@ The `[found by X search phrases]` note means that video was returned by multiple
 
 ---
 
+## Step 2: Transcript Collector
+
+Step 2 runs **automatically** right after Step 1 saves its results. You don't need to do anything extra.
+
+### What it does
+
+1. Reads the `.json` file that Step 1 just created
+2. Loops through each video in the list
+3. Downloads the transcript (captions) from YouTube — **no extra API key needed**
+4. Saves one `.txt` file per video into the `transcripts/` folder
+5. Skips any video with no captions and keeps going
+6. Prints a summary when it's done
+
+### What a transcript file looks like
+
+```
+Title:        HubSpot CRM Full Tutorial 2024
+Channel:      HubSpot
+URL:          https://www.youtube.com/watch?v=abc123xyz
+Publish Date: 2024-03-10
+------------------------------------------------------------
+
+Hello and welcome to this tutorial on HubSpot CRM...
+```
+
+### End-of-run summary
+
+After processing all videos, you'll see something like:
+
+```
+  STEP 2 COMPLETE — SUMMARY
+  --------------------------------------------------------
+  Videos attempted:           15
+  Transcripts saved:          12
+  Skipped (no transcript):    3
+  Transcripts saved to:       C:\Users\You\market-voice\transcripts
+```
+
+### Why some videos are skipped
+
+Not every YouTube video has captions. A video will be skipped if:
+- The video owner has disabled captions
+- No English transcript is available
+- The video is private or has been removed
+
+This is normal. The script continues without crashing.
+
+### Running Step 2 on its own
+
+If you already have a JSON file in `/output` and just want to re-run the transcript step:
+
+```
+python transcript_collector.py
+```
+
+It will automatically find and use the most recent JSON file in `/output`.
+
+---
+
 ## Configuring the Claude Model
 
 If you're using the Anthropic API, you can control which Claude model is used by setting `CLAUDE_MODEL` in your `.env` file:
@@ -210,12 +274,12 @@ For phrase generation, the default (`claude-haiku-4-5`) is more than good enough
 | Step | What It Does |
 |------|-------------|
 | **Step 1 (this)** | Find relevant YouTube videos |
-| Step 2 | Collect transcripts from those videos |
+| **Step 2 (this)** | Collect transcripts from those videos |
 | Step 3 | Summarize what people are saying |
 | Step 4 | Extract key insights by audience and topic |
 | Step 5 | Generate a Market Voice report |
 
-The `.json` file you generate in Step 1 will be the input for Step 2.
+The transcript `.txt` files saved to `/transcripts` will be the input for Step 3.
 
 ---
 
