@@ -2,4 +2,5 @@
 # Install them by running: pip install -r requirements.txt
 
 google-api-python-client==2.118.0   # Lets Python talk to YouTube's search API
-python-dotenv==1.0.1                # Lets Python read your secret API key from a .env file
+python-dotenv==1.0.1                # Lets Python read your secret API keys from a .env file
+anthropic==0.49.0                   # Lets Python talk to Claude (optional — only needed for smart phrase generation)

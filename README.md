@@ -1,6 +1,11 @@
 # Market Voice — Step 1: Video Finder
 
-This is **Step 1** of the Market Voice project. Its only job is to find relevant YouTube videos about a company and topic, and give you a clean list to review.
+This is **Step 1** of the Market Voice project. Its only job is to find relevant YouTube videos about a company and topic, and give you a clean ranked list to review.
+
+Step 1 now has two sub-steps that run automatically back to back:
+
+- **Step 1A — Search Phrase Expander:** Generates 6 smart YouTube search phrases from your inputs
+- **Step 1B — Video Finder:** Searches YouTube once per phrase, removes duplicates, and ranks results
 
 No transcripts. No summaries. Just a list of videos. That comes in later steps.
 
@@ -10,13 +15,55 @@ No transcripts. No summaries. Just a list of videos. That comes in later steps.
 
 | File | What It Does |
 |------|-------------|
-| `video_finder.py` | The main script. You run this to search YouTube. |
+| `video_finder.py` | The main script. You run this. It handles both Step 1A and Step 1B automatically. |
+| `phrase_expander.py` | Step 1A logic. Generates search phrases. Called by `video_finder.py` — you don't run this directly. |
 | `requirements.txt` | A list of Python packages this project needs. You install these once. |
-| `.env.example` | A template showing where to put your YouTube API key. You copy this and rename it to `.env`. |
+| `.env.example` | A template showing where to put your API keys. You copy this and rename it to `.env`. |
 | `.gitignore` | Tells git which files to ignore (like your private `.env` file). |
-| `README.md` | This file. Explains everything. |
+| `README.md` | This file. |
 
-When you run the script, it will create an `output/` folder and save your results there.
+When you run the script, it creates an `output/` folder and saves your results there.
+
+---
+
+## How Step 1 Now Works (Plain English)
+
+**Before this upgrade**, the script built one search phrase from your inputs (e.g. `HubSpot CRM features`) and searched YouTube once.
+
+**Now**, it works like this:
+
+1. You answer the same 6 questions as before
+2. **Step 1A** generates 6 search phrases from your inputs, for example:
+   - `HubSpot CRM honest review 2024`
+   - `HubSpot CRM pros and cons`
+   - `HubSpot CRM walkthrough tutorial`
+   - `HubSpot CRM for small business owners`
+   - `HubSpot CRM problems experience`
+   - `HubSpot vs competitors CRM`
+3. **Step 1B** searches YouTube once for each phrase, collecting ~4 videos per search
+4. Duplicates are removed (the same video appearing in multiple searches is kept once)
+5. Videos found by more than one phrase are ranked higher — that's a strong signal of relevance
+6. The final list is trimmed to your requested count and saved
+
+This catches videos that a single search would miss, without any extra work from you.
+
+---
+
+## Smart Mode vs. Fallback Mode
+
+### Smart mode (with Claude)
+If you add an `ANTHROPIC_API_KEY` to your `.env`, Step 1A uses Claude to generate phrases that are varied, specific, and intelligent.
+
+### Fallback mode (no Claude key)
+If you skip the Anthropic key, Step 1A uses simple templates:
+- `{company} {topic} review`
+- `{company} {topic} problems`
+- `{company} {topic} walkthrough`
+- `{company} {topic} experience`
+- `{company} {topic} pros and cons`
+- `{company} {topic} tutorial`
+
+**The script works either way.** Claude just makes the phrases smarter.
 
 ---
 
@@ -32,125 +79,133 @@ Open your Terminal (Mac) or Command Prompt (Windows) and type:
 python --version
 ```
 
-If you see something like `Python 3.9.x` or higher, you're good.
-If you get an error, download Python from [https://www.python.org/downloads/](https://www.python.org/downloads/) and install it.
+If you see `Python 3.9.x` or higher, you're good. If not, download it from [https://www.python.org/downloads/](https://www.python.org/downloads/).
 
 ---
 
 ### Step B: Install the required packages
 
-In your Terminal, go to this project folder and run:
-
 ```
 pip install -r requirements.txt
 ```
 
-This installs two small packages that let Python talk to YouTube.
+---
+
+### Step C: Get a free YouTube API key (required)
+
+1. Go to [https://console.cloud.google.com/](https://console.cloud.google.com/) and sign in
+2. Click **"Select a project"** → **"New Project"** → name it anything → click **Create**
+3. In the search bar, type `YouTube Data API v3` and click on it
+4. Click the blue **"Enable"** button
+5. Go to **APIs & Services → Credentials → + Create Credentials → API key**
+6. Copy the key that appears
 
 ---
 
-### Step C: Get a free YouTube API key
+### Step D: Get an Anthropic API key (optional but recommended)
 
-1. Go to [https://console.cloud.google.com/](https://console.cloud.google.com/) and sign in with a Google account
-2. Click **"Select a project"** at the top → then **"New Project"**
-3. Name it anything (e.g. `market-voice`) and click **Create**
-4. In the search bar at the top, type `YouTube Data API v3` and click on it
-5. Click the blue **"Enable"** button
-6. In the left menu, go to **APIs & Services → Credentials**
-7. Click **"+ Create Credentials"** → choose **"API key"**
-8. Copy the key that appears (it looks like a long string of letters and numbers)
+This enables smarter phrase generation. Skip it if you want to keep things simple for now.
 
-This API key is **free**. Google gives you 10,000 search units per day at no cost, which is more than enough.
+1. Go to [https://console.anthropic.com/](https://console.anthropic.com/) and sign up
+2. Go to **API Keys → Create Key**
+3. Copy the key
 
 ---
 
-### Step D: Add your API key to the project
+### Step E: Create your `.env` file
 
 1. Find the file called `.env.example` in this folder
-2. Make a **copy** of it
-3. Rename the copy to just `.env` (remove the word "example")
-4. Open `.env` in any text editor (Notepad works fine)
-5. Replace `YOUR_KEY_HERE` with the API key you copied in Step C
-6. Save the file
-
-Your `.env` file should look like this (with your real key):
+2. Make a copy of it and rename the copy to `.env`
+3. Open `.env` in any text editor
+4. Fill in your keys:
 
 ```
-YOUTUBE_API_KEY=AIzaSyD_your_actual_key_here
+YOUTUBE_API_KEY=your_youtube_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here   ← optional, delete this line if skipping
+CLAUDE_MODEL=claude-haiku-4-5               ← optional, controls which Claude model is used
 ```
 
-> **Important:** Never share this file or post it publicly. It is your private key.
+> **Important:** Never share your `.env` file. It contains private keys.
 
 ---
 
 ## How to Run Step 1
 
-Once the setup is done, running the script is simple.
+```
+python video_finder.py
+```
 
-1. Open your Terminal
-2. Navigate to this project folder. For example:
-   ```
-   cd /path/to/market-voice-youtube
-   ```
-3. Run the script:
-   ```
-   python video_finder.py
-   ```
-4. The script will ask you a few questions — just type your answers and press Enter:
+Answer the prompts:
 
-   ```
-   Company name: HubSpot
-   Topic to search: CRM features
-   Start date (YYYY-MM-DD): 2024-01-01
-   End date (YYYY-MM-DD): 2024-12-31
-   Number of videos to find: 10
-   Audience type (optional): small business owners
-   ```
+```
+  Company name (optional): HubSpot
+  Topic to search: CRM features
+  Start date (YYYY-MM-DD): 2024-01-01
+  End date (YYYY-MM-DD): 2024-12-31
+  Number of videos to find: 15
+  Audience type (optional): small business owners
+```
 
-5. It will search YouTube and print the results in your Terminal
+The script will show you:
+1. The 6 search phrases it generated (Step 1A)
+2. Each YouTube search as it runs (Step 1B)
+3. The final ranked video list in your terminal
 
 ---
 
 ## Where to See the Output
 
-After running the script, two files are saved in a folder called `output/` inside your project:
+After running, two files are saved in `output/`:
 
 | File type | What it is |
 |-----------|-----------|
 | `.txt` file | A plain, readable list of videos — open this to review results |
 | `.json` file | The same data in a structured format — used by future steps |
 
-The filename includes your company name and the date/time you ran it. For example:
-
+Example filename:
 ```
 output/hubspot_crm_features_20240315_143022.txt
-output/hubspot_crm_features_20240315_143022.json
 ```
 
-Open the `.txt` file in any text editor to see your video list. Each entry looks like this:
+Each entry in the `.txt` file looks like this:
 
 ```
-1. HubSpot CRM Full Tutorial 2024 | Everything You Need to Know
+1. HubSpot CRM Full Tutorial 2024 [found by 3 search phrases]
    Channel:  HubSpot
    URL:      https://www.youtube.com/watch?v=abc123xyz
    Date:     2024-03-10
-   Why:      Video mentions 'HubSpot' in the title and covers 'CRM features' in the title.
+   Why:      Video mentions 'HubSpot' in the title and found by 3 different search phrases.
 ```
+
+The `[found by X search phrases]` note means that video was returned by multiple different searches — a good signal that it's highly relevant.
+
+---
+
+## Configuring the Claude Model
+
+If you're using the Anthropic API, you can control which Claude model is used by setting `CLAUDE_MODEL` in your `.env` file:
+
+| Setting | Speed | Cost | Best for |
+|---------|-------|------|----------|
+| `claude-haiku-4-5` (default) | Fast | Lowest | Everyday use |
+| `claude-sonnet-4-6` | Medium | Moderate | Better phrase quality |
+| `claude-opus-4-6` | Slower | Higher | Maximum quality |
+
+For phrase generation, the default (`claude-haiku-4-5`) is more than good enough.
 
 ---
 
 ## Tips
 
-- **Date range:** Narrower date ranges return fewer but more timely results. Start with 3–6 months.
-- **Number of videos:** 10–20 is a good starting point. YouTube allows up to 50 per search.
-- **Topic:** Be specific. `CRM onboarding` returns better results than just `software`.
-- **Audience type:** This is optional. Adding it (e.g. `enterprise sales teams`) refines the search.
+- **Date range:** 3–6 months gives focused, timely results
+- **Number of videos:** 10–20 is a good starting point
+- **Topic:** Be specific. `CRM onboarding` beats `software`
+- **Company is optional:** Leave it blank to search by topic only
+- **Audience type:** Optional but helps Claude generate more targeted phrases
 
 ---
 
 ## What Comes Next (Future Steps)
-
-This is only Step 1. Here is how the full workflow will grow:
 
 | Step | What It Does |
 |------|-------------|
@@ -160,14 +215,15 @@ This is only Step 1. Here is how the full workflow will grow:
 | Step 4 | Extract key insights by audience and topic |
 | Step 5 | Generate a Market Voice report |
 
-Each step builds on the output from the previous one. The `.json` file you generate in Step 1 will be the input for Step 2.
+The `.json` file you generate in Step 1 will be the input for Step 2.
 
 ---
 
 ## Need Help?
 
 If something isn't working:
-- Double-check that your `.env` file exists and has a real API key (not `YOUR_KEY_HERE`)
+- Make sure your `.env` file exists (not `.env.example`) and has a real YouTube API key
 - Make sure you ran `pip install -r requirements.txt`
-- Make sure your date format is `YYYY-MM-DD` (e.g. `2024-01-01`)
+- Make sure dates are in `YYYY-MM-DD` format (e.g. `2024-01-01`)
 - Make sure you have an internet connection when you run the script
+- If Claude phrase generation fails, the script automatically falls back to rule-based phrases — check the terminal output for a notice
